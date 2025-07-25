@@ -1,0 +1,33 @@
+name: Manual Deploy to S3 + CloudFront Invalidate
+
+on:
+  workflow_dispatch:  # <-- Manual trigger
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials using OIDC
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::<ACCOUNT_ID>:role/<ROLE_NAME>
+          aws-region: ap-south-1  # or your AWS region
+
+      - name: Deploy to S3
+        run: |
+          aws s3 sync ./build s3://your-bucket-name --delete
+
+      - name: Create CloudFront invalidation
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id <CLOUDFRONT_DIST_ID> \
+            --paths "/*"
+
